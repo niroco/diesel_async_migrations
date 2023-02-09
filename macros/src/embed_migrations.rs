@@ -19,7 +19,7 @@ pub fn expand(path: String) -> proc_macro2::TokenStream {
         migration_literals_from_path(&migrations_expr).expect("Failed to read migration literals");
 
     quote! {
-        async_migs::EmbeddedMigrations{migrations: &[#(#embeded_migrations,)*]}
+        async_migrations::EmbeddedMigrations{migrations: &[#(#embeded_migrations,)*]}
     }
 }
 
@@ -60,7 +60,7 @@ fn migration_literal_from_path(path: &Path) -> proc_macro2::TokenStream {
         }
     };
 
-    quote!(async_migs::EmbeddedMigration {
+    quote!(async_migrations::EmbeddedMigration {
         up: include_str!(#up_sql_path),
         down: #down_sql,
         name: #name,
