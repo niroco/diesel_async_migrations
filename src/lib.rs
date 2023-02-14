@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use diesel::prelude::*;
-use diesel_async::{AsyncConnection, RunQueryDsl, SimpleAsyncConnection};
+use diesel_async::{AsyncConnection, RunQueryDsl};
 pub use macros::embed_migrations;
 use scoped_futures::ScopedFutureExt;
 use tracing::info;
@@ -12,8 +12,6 @@ diesel::table! {
         run_on -> Timestamp,
     }
 }
-
-type Conn = diesel_async::AsyncPgConnection;
 
 type Result<T> = std::result::Result<T, diesel::result::Error>;
 
@@ -43,7 +41,10 @@ pub struct EmbeddedMigrations {
 }
 
 impl EmbeddedMigrations {
-    pub async fn run_pending_migs(&self, conn: &mut diesel_async::AsyncPgConnection) -> Result<()> {
+    pub async fn run_pending_migs<C>(&self, conn: &mut C) -> Result<()>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
+    {
         setup_db(conn).await?;
 
         let pending_migs = self.pending_migrations(conn).await?;
@@ -62,7 +63,10 @@ impl EmbeddedMigrations {
         Ok(())
     }
 
-    async fn pending_migrations(&self, conn: &mut Conn) -> Result<Vec<EmbeddedMigration>> {
+    async fn pending_migrations<C>(&self, conn: &mut C) -> Result<Vec<EmbeddedMigration>>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg>,
+    {
         let applied_versions = get_applied_migrations(conn).await?;
 
         let mut migrations = self
@@ -88,7 +92,10 @@ struct Version {
     version: String,
 }
 
-async fn run_migration<'a>(conn: &mut Conn, migration: &'a EmbeddedMigration) -> Result<Version> {
+async fn run_migration<'a, C>(conn: &mut C, migration: &'a EmbeddedMigration) -> Result<Version>
+where
+    C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
+{
     let qry = migration.up.to_string();
     let version = migration.version();
     let res = conn
@@ -111,7 +118,10 @@ async fn run_migration<'a>(conn: &mut Conn, migration: &'a EmbeddedMigration) ->
     Ok(res)
 }
 
-async fn get_applied_migrations(conn: &mut Conn) -> Result<Vec<Version>> {
+async fn get_applied_migrations<C>(conn: &mut C) -> Result<Vec<Version>>
+where
+    C: AsyncConnection<Backend = diesel::pg::Pg>,
+{
     let res = __diesel_schema_migrations::table
         .select(__diesel_schema_migrations::version)
         .order(__diesel_schema_migrations::version.desc())
@@ -124,7 +134,10 @@ async fn get_applied_migrations(conn: &mut Conn) -> Result<Vec<Version>> {
     Ok(res)
 }
 
-async fn setup_db(conn: &mut Conn) -> Result<()> {
+async fn setup_db<C>(conn: &mut C) -> Result<()>
+where
+    C: AsyncConnection<Backend = diesel::pg::Pg>,
+{
     conn.batch_execute(CREATE_MIGRATIONS_TABLE).await?;
     Ok(())
 }
