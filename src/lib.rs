@@ -63,7 +63,7 @@ impl EmbeddedMigrations {
         Ok(())
     }
 
-    async fn pending_migrations<C>(&self, conn: &mut C) -> Result<Vec<EmbeddedMigration>>
+    pub async fn pending_migrations<C>(&self, conn: &mut C) -> Result<Vec<EmbeddedMigration>>
     where
         C: AsyncConnection<Backend = diesel::pg::Pg>,
     {
