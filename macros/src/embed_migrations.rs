@@ -19,7 +19,7 @@ pub fn expand(path: String) -> proc_macro2::TokenStream {
         migration_literals_from_path(&migrations_expr).expect("Failed to read migration literals");
 
     quote! {
-        async_migrations::EmbeddedMigrations{migrations: &[#(#embeded_migrations,)*]}
+        async_migrations::EmbeddedMigrations{migrations: &[#(#embeded_migrations,)*], setup_attempted: std::sync::atomic::AtomicU8::new(0), }
     }
 }
 

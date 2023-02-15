@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicU8, Ordering},
+};
 
 use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
@@ -38,14 +41,28 @@ impl EmbeddedMigration {
 #[derive(Debug)]
 pub struct EmbeddedMigrations {
     pub migrations: &'static [EmbeddedMigration],
+    pub setup_attempted: AtomicU8,
 }
 
 impl EmbeddedMigrations {
+    async fn setup_db<C>(&self, conn: &mut C) -> Result<()>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg>,
+    {
+        if self.setup_attempted.fetch_add(1, Ordering::SeqCst) != 0 {
+            return Ok(());
+        }
+
+        conn.batch_execute(CREATE_MIGRATIONS_TABLE).await?;
+
+        Ok(())
+    }
+
     pub async fn run_pending_migs<C>(&self, conn: &mut C) -> Result<()>
     where
         C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
     {
-        setup_db(conn).await?;
+        self.setup_db(conn).await?;
 
         let pending_migs = self.pending_migrations(conn).await?;
 
@@ -67,6 +84,7 @@ impl EmbeddedMigrations {
     where
         C: AsyncConnection<Backend = diesel::pg::Pg>,
     {
+        self.setup_db(conn).await?;
         let applied_versions = get_applied_migrations(conn).await?;
 
         let mut migrations = self
@@ -132,12 +150,4 @@ where
         .collect::<Vec<_>>();
 
     Ok(res)
-}
-
-async fn setup_db<C>(conn: &mut C) -> Result<()>
-where
-    C: AsyncConnection<Backend = diesel::pg::Pg>,
-{
-    conn.batch_execute(CREATE_MIGRATIONS_TABLE).await?;
-    Ok(())
 }
