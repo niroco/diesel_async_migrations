@@ -7,7 +7,7 @@ Handles Postgres migrations via async diesel
 
 ```rust
 
-pub const MIGRATIONS: async_migrations::EmbeddedMigrations = async_migrations::embed_migrations!();
+pub const MIGRATIONS: diesel_async_migrations::EmbeddedMigrations = diesel_async_migrations::embed_migrations!();
 
 
 async fn run_migrations(url: impl AsRef<str>) -> anyhow::Result<()> {
