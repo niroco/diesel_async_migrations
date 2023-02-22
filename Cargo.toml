@@ -3,6 +3,7 @@ name = "async_migrations"
 version = "0.5.0"
 edition = "2021"
 repository = "https://github.com/Parkando/async_migrations"
+license = "MIT"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
