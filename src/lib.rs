@@ -80,6 +80,24 @@ impl EmbeddedMigrations {
         Ok(())
     }
 
+    pub async fn revert_last_migration<C>(&self, conn: &mut C) -> Result<()>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
+    {
+        if let Some(last_migration_version) = get_applied_migrations(conn).await?.into_iter().next()
+        {
+            if let Some(migration_to_revert) = self
+                .migrations
+                .iter()
+                .find(|m| m.version() == *last_migration_version.version)
+            {
+                revert_migration(conn, migration_to_revert).await?;
+                return Ok(());
+            }
+        }
+        Err(diesel::result::Error::NotFound)
+    }
+
     pub async fn pending_migrations<C>(&self, conn: &mut C) -> Result<Vec<EmbeddedMigration>>
     where
         C: AsyncConnection<Backend = diesel::pg::Pg>,
