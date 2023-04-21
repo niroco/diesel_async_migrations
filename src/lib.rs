@@ -58,7 +58,7 @@ impl EmbeddedMigrations {
         Ok(())
     }
 
-    pub async fn run_pending_migs<C>(&self, conn: &mut C) -> Result<()>
+    pub async fn run_pending_migrations<C>(&self, conn: &mut C) -> Result<()>
     where
         C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
     {
