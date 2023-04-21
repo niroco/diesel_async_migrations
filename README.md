@@ -1,4 +1,4 @@
-# Diesel Async Migs
+# Diesel Async Migrations
 
 Handles Postgres migrations via async diesel
 
@@ -12,7 +12,7 @@ pub const MIGRATIONS: diesel_async_migrations::EmbeddedMigrations = diesel_async
 
 async fn run_migrations(url: impl AsRef<str>) -> anyhow::Result<()> {
     let mut conn = AsyncConnection::establish(url.as_ref()).await?;
-    MIGRATIONS.run_pending_migs(&mut conn).await?;
+    MIGRATIONS.run_pending_migrations(&mut conn).await?;
     Ok(())
 }
 
