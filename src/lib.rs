@@ -136,6 +136,28 @@ where
     Ok(res)
 }
 
+async fn revert_migration<'a, C>(conn: &mut C, migration: &'a EmbeddedMigration) -> Result<Version>
+where
+    C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
+{
+    conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        async move {
+            conn.batch_execute(migration.down.unwrap_or_default())
+                .await?;
+
+            diesel::delete(__diesel_schema_migrations::table.find(migration.version()))
+                .execute(conn)
+                .await?;
+
+            Ok(Version {
+                version: migration.version(),
+            })
+        }
+        .scope_boxed()
+    })
+    .await
+}
+
 async fn get_applied_migrations<C>(conn: &mut C) -> Result<Vec<Version>>
 where
     C: AsyncConnection<Backend = diesel::pg::Pg>,
