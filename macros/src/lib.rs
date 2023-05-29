@@ -124,7 +124,7 @@ pub fn embed_migrations(input: TokenStream) -> TokenStream {
 fn migrations_directories(
     path: &'_ std::path::Path,
 ) -> Result<impl Iterator<Item = Result<std::fs::DirEntry, std::io::Error>> + '_, std::io::Error> {
-    Ok(path.read_dir()?.into_iter().filter_map(|entry_res| {
+    Ok(path.read_dir()?.filter_map(|entry_res| {
         entry_res
             .and_then(|entry| {
                 Ok(
