@@ -39,63 +39,6 @@ use proc_macro::TokenStream;
 /// Diesel CLI does. If specified, the path should be relative to the directory where `Cargo.toml`
 /// resides.
 ///
-/// # Examples
-///
-/// ```rust
-/// use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-/// # use std::error::Error;
-/// # include!("../../../diesel/src/doctest_setup.rs");
-/// #
-/// # #[cfg(feature = "postgres")]
-/// # fn migration_connection() -> diesel::PgConnection {
-/// #    let connection_url = database_url_from_env("PG_DATABASE_URL");
-/// #    let mut conn = diesel::PgConnection::establish(&connection_url).unwrap();
-/// #    conn.begin_test_transaction().unwrap();
-/// #    conn
-/// # }
-/// #
-/// # #[cfg(feature = "sqlite")]
-/// # fn migration_connection() -> diesel::SqliteConnection {
-/// #    let connection_url = database_url_from_env("SQLITE_DATABASE_URL");
-/// #    let mut conn = diesel::SqliteConnection::establish(&connection_url).unwrap();
-/// #    conn.begin_test_transaction().unwrap();
-/// #    conn
-/// # }
-/// #
-/// # #[cfg(feature = "mysql")]
-/// # fn migration_connection() -> diesel::MysqlConnection {
-/// #    let connection_url = database_url_from_env("MYSQL_DATABASE_URL");
-/// #    let mut conn = diesel::MysqlConnection::establish(&connection_url).unwrap();
-/// #    conn
-/// # }
-/// #
-/// #
-/// # #[cfg(feature = "postgres")]
-/// pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations/postgresql");
-/// # #[cfg(all(feature = "mysql", not(feature = "postgres")))]
-/// # pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations/mysql");
-/// # #[cfg(all(feature = "sqlite", not(any(feature = "postgres", feature = "mysql"))))]
-/// # pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations/sqlite");
-///
-/// # fn main() {
-/// #     let connection = &mut migration_connection();
-/// #     run_migrations(connection).unwrap();
-/// # }
-///
-/// fn run_migrations(connection: &mut impl MigrationHarness<DB>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-/// #   #[cfg(feature = "mysql")]
-/// #   connection.revert_all_migrations(MIGRATIONS)?;
-///
-///     // This will run the necessary migrations.
-///     //
-///     // See the documentation for `MigrationHarness` for
-///     // all available methods.
-///     connection.run_pending_migrations(MIGRATIONS)?;
-///
-///     Ok(())
-/// }
-/// ```
-///
 /// # Automatic rebuilds
 ///
 /// Due to limitations in rusts proc-macro API there is currently no
