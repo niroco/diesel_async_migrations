@@ -5,7 +5,7 @@ use std::{
 
 use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
-pub use macros::embed_migrations;
+pub use diesel_async_migrations_macros::embed_migrations;
 use scoped_futures::ScopedFutureExt;
 use tracing::info;
 

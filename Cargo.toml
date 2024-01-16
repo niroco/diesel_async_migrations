@@ -2,20 +2,25 @@
 name = "diesel_async_migrations"
 version = "0.11.0"
 edition = "2021"
-repository = "https://github.com/Parkando/async_migrations"
+repository = "https://github.com/niroco/diesel_async_migrations"
 license = "MIT"
-publish = false
+documentation = "https://docs.rs/diesel_async_migrations"
+readme = "README.md"
+description = "migrations for diesel_async"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macros = { path = "./macros" }
+diesel_async_migrations_macros = { path = "./macros", version = "0.11" }
 
 diesel-async = { version = "0.4", features = [ "postgres" ] }
 diesel = "2"
 scoped-futures = "0.1.3"
 tracing = "0.1.37"
 
+
+[dev-dependencies]
+lazy_static = "1.4"
 
 [workspace]
 members = [ "./macros" ]
