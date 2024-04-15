@@ -15,11 +15,11 @@ pub fn expand(path: String) -> proc_macro2::TokenStream {
         .unwrap_or_else(|_| {
             panic!("Failed to receive migrations dir from {migrations_path_opt:?}",)
         });
-    let embeded_migrations =
+    let embedded_migrations =
         migration_literals_from_path(&migrations_expr).expect("Failed to read migration literals");
 
     quote! {
-        diesel_async_migrations::EmbeddedMigrations{migrations: &[#(#embeded_migrations,)*], setup_attempted: std::sync::atomic::AtomicU8::new(0), }
+        diesel_async_migrations::EmbeddedMigrations{migrations: &[#(#embedded_migrations,)*], }
     }
 }
 
