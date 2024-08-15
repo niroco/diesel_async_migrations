@@ -18,8 +18,6 @@ diesel::table! {
 
 type Result<T> = std::result::Result<T, diesel::result::Error>;
 
-pub const CREATE_MIGRATIONS_TABLE: &str = include_str!("setup_migration_table.sql");
-
 #[derive(Debug, Clone, Copy)]
 pub struct EmbeddedMigration {
     pub up: &'static str,
@@ -45,15 +43,23 @@ pub struct EmbeddedMigrations {
 }
 
 impl EmbeddedMigrations {
-    async fn setup_db<C>(&self, conn: &mut C) -> Result<()>
+    pub async fn setup_migrations_table<C>(&self, conn: &mut C) -> Result<()>
     where
         C: AsyncConnection<Backend = diesel::pg::Pg>,
     {
-        if self.setup_attempted.fetch_add(1, Ordering::SeqCst) != 0 {
-            return Ok(());
-        }
+        conn.batch_execute(include_str!("setup_migration_table.sql"))
+            .await?;
 
-        conn.batch_execute(CREATE_MIGRATIONS_TABLE).await?;
+        Ok(())
+    }
+
+    async fn ensure_migrations_table<C>(&self, conn: &mut C) -> Result<()>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg>,
+    {
+        if self.setup_attempted.fetch_add(1, Ordering::SeqCst) == 0 {
+            self.setup_migrations_table(conn).await?;
+        }
 
         Ok(())
     }
@@ -62,7 +68,7 @@ impl EmbeddedMigrations {
     where
         C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
     {
-        self.setup_db(conn).await?;
+        self.ensure_migrations_table(conn).await?;
 
         let pending_migs = self.pending_migrations(conn).await?;
 
@@ -102,7 +108,8 @@ impl EmbeddedMigrations {
     where
         C: AsyncConnection<Backend = diesel::pg::Pg>,
     {
-        self.setup_db(conn).await?;
+        self.ensure_migrations_table(conn).await?;
+
         let applied_versions = get_applied_migrations(conn).await?;
 
         let mut migrations = self
