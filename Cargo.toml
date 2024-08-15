@@ -1,6 +1,6 @@
 [package]
 name = "diesel_async_migrations"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 repository = "https://github.com/niroco/diesel_async_migrations"
 license = "MIT"
