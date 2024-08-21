@@ -14,7 +14,7 @@ description = "migrations for diesel_async"
 diesel_async_migrations_macros = { path = "./macros", version = "0.12" }
 
 diesel-async = { version = "0.5" }
-diesel = { version = "2", features = [ "postgres" ] }
+diesel = { version = "2", features = [ "postgres_backend" ] }
 scoped-futures = "0.1"
 tracing = "0.1"
 
