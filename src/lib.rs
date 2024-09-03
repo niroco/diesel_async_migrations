@@ -33,6 +33,53 @@ impl EmbeddedMigration {
             .map(|s| s.replace('-', ""))
             .expect("invalid migration name")
     }
+
+    pub async fn run<C>(&self, conn: &mut C) -> Result<Version>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
+    {
+        let qry = self.up.to_string();
+        let version = self.version();
+        let res = conn
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    conn.batch_execute(&qry).await?;
+
+                    let version = diesel::insert_into(__diesel_schema_migrations::table)
+                        .values(__diesel_schema_migrations::version.eq(version))
+                        .returning(__diesel_schema_migrations::version)
+                        .get_result::<String>(conn)
+                        .await?;
+
+                    Ok(Version { version })
+                }
+                .scope_boxed()
+            })
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn revert<C>(&self, conn: &mut C) -> Result<Version>
+    where
+        C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
+    {
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            async move {
+                conn.batch_execute(self.down.unwrap_or_default()).await?;
+
+                diesel::delete(__diesel_schema_migrations::table.find(self.version()))
+                    .execute(conn)
+                    .await?;
+
+                Ok(Version {
+                    version: self.version(),
+                })
+            }
+            .scope_boxed()
+        })
+        .await
+    }
 }
 
 #[allow(missing_copy_implementations)]
@@ -80,7 +127,7 @@ impl EmbeddedMigrations {
 
         for mig in pending_migs {
             info!("applying migration {}", mig.name);
-            run_migration(conn, &mig).await?;
+            mig.run(conn).await?;
         }
 
         Ok(())
@@ -97,7 +144,7 @@ impl EmbeddedMigrations {
                 .iter()
                 .find(|m| m.version() == *last_migration_version.version)
             {
-                revert_migration(conn, migration_to_revert).await?;
+                migration_to_revert.revert(conn).await?;
                 return Ok(());
             }
         }
@@ -131,56 +178,8 @@ impl EmbeddedMigrations {
 }
 
 #[derive(Queryable)]
-struct Version {
+pub struct Version {
     version: String,
-}
-
-async fn run_migration<'a, C>(conn: &mut C, migration: &'a EmbeddedMigration) -> Result<Version>
-where
-    C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
-{
-    let qry = migration.up.to_string();
-    let version = migration.version();
-    let res = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async move {
-                conn.batch_execute(&qry).await?;
-
-                let version = diesel::insert_into(__diesel_schema_migrations::table)
-                    .values(__diesel_schema_migrations::version.eq(version))
-                    .returning(__diesel_schema_migrations::version)
-                    .get_result::<String>(conn)
-                    .await?;
-
-                Ok(Version { version })
-            }
-            .scope_boxed()
-        })
-        .await?;
-
-    Ok(res)
-}
-
-async fn revert_migration<'a, C>(conn: &mut C, migration: &'a EmbeddedMigration) -> Result<Version>
-where
-    C: AsyncConnection<Backend = diesel::pg::Pg> + 'static + Send,
-{
-    conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        async move {
-            conn.batch_execute(migration.down.unwrap_or_default())
-                .await?;
-
-            diesel::delete(__diesel_schema_migrations::table.find(migration.version()))
-                .execute(conn)
-                .await?;
-
-            Ok(Version {
-                version: migration.version(),
-            })
-        }
-        .scope_boxed()
-    })
-    .await
 }
 
 async fn get_applied_migrations<C>(conn: &mut C) -> Result<Vec<Version>>
