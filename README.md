@@ -1,5 +1,9 @@
 # !!! UNOFFICIAL
 
+# DEPRECATED
+
+Prefer using diesel-migrations instead of this crate. A really good example can be found in the diesel-async repository [here](https://github.com/weiznich/diesel_async/blob/main/examples/sync-wrapper/src/main.rs).
+
 
 # Diesel Async Migrations
 
